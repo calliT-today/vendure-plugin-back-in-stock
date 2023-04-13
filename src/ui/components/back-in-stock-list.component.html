@@ -1,0 +1,68 @@
+<vdr-action-bar>
+    <vdr-ab-left>
+        <div class="filter-controls">
+            <select clrSelect name="status" [(ngModel)]="filteredStatus" (change)="refresh()">
+                <option [ngValue]="null">All Subscriptions</option>
+                <option value="Created">Active</option>
+                <option value="Notified">Notified</option>
+                <option value="Converted">Converted</option>
+            </select>
+        </div>
+    </vdr-ab-left>
+    <vdr-ab-right> </vdr-ab-right>
+</vdr-action-bar>
+<vdr-data-table
+    [items]="items$ | async"
+    [itemsPerPage]="itemsPerPage$ | async"
+    [totalItems]="totalItems$ | async"
+    [currentPage]="currentPage$ | async"
+    (pageChange)="setPageNumber($event)"
+    (itemsPerPageChange)="setItemsPerPage($event)"
+>
+    <vdr-dt-column>ID</vdr-dt-column>
+    <vdr-dt-column>Status</vdr-dt-column>
+    <vdr-dt-column>Email</vdr-dt-column>
+    <vdr-dt-column>Product</vdr-dt-column>
+    <vdr-dt-column>Created At</vdr-dt-column>
+    <vdr-dt-column>Updated At</vdr-dt-column>
+    <vdr-dt-column></vdr-dt-column>
+    <ng-template let-subscription="item">
+        <td class="left align-middle">
+            {{ subscription.id }}
+        </td>
+        <td class="left align-middle">
+            {{ subscription.status }}
+        </td>
+        <td class="left align-middle">
+            <a
+                *ngIf="subscription.customer !== null; else guestUser"
+                [routerLink]="['/customer', 'customers', subscription.customer.id]"
+            >
+                {{ subscription.email }}
+            </a>
+            <ng-template #guestUser>
+                {{ subscription.email }}
+            </ng-template>
+        </td>
+        <td class="left align-middle">
+            <a
+                title="{{ 'Stock on hand - ' + subscription.productVariant.stockOnHand }}"
+                [routerLink]="[
+                    '/catalog',
+                    'products',
+                    subscription.productVariant.id,
+                    { id: subscription.productVariant.id, tab: 'variants' }
+                ]"
+            >
+                <clr-icon shape="link"></clr-icon>
+                {{ subscription.productVariant.name }}
+            </a>
+        </td>
+        <td class="left align-middle">
+            {{ subscription.createdAt | date : "yyyy-MM-dd '@' h:mma" }}
+        </td>
+        <td class="left align-middle">
+            {{ subscription.updatedAt | date : "yyyy-MM-dd '@' h:mma" }}
+        </td>
+    </ng-template>
+</vdr-data-table>

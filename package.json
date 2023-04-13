@@ -1,0 +1,30 @@
+{
+  "name": "@callit-today/vendure-plugin-back-in-stock",
+  "version": "1.0.0",
+  "description": "Back-In-Stock Notification Plugin For Vendure",
+  "author": "CALLiT.today <plugins@callit.today>",
+  "repository": "https://github.com/calliT-today/vendure-plugin-back-in-stock",
+  "license": "MIT",
+  "private": false,
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "rimraf dist && tsc"
+  },
+  "devDependencies": {
+    "@vendure/admin-ui-plugin": "1.9.3",
+    "@vendure/asset-server-plugin": "1.9.3",
+    "@vendure/core": "1.9.3",
+    "@vendure/email-plugin": "^1.9.5",
+    "@vendure/ui-devkit": "1.9.3",
+    "rimraf": "^4.1.2",
+    "typescript": "4.9.5"
+  }
+}
