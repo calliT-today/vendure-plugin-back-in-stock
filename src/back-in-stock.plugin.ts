@@ -16,6 +16,8 @@ import { BackInStockEvent } from './events/back-in-stock.event';
 import { BackInStockSubscriptionStatus, SortOrder } from '../generated/generated-shop-types';
 import { UnionResolver } from './api/union.resolver';
 import { BackInStockAdminResolver } from './api/back-in-stock-admin.resolver';
+import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
+import path from 'path';
 
 export interface BackInStockOptions {
     enabled: boolean;
@@ -96,6 +98,23 @@ export class BackInStockPlugin {
             }
         });
     }
+
+    static uiExtensions: AdminUiExtension = {
+        extensionPath: path.join(__dirname, 'ui'),
+        ngModules: [
+            {
+                type: 'shared' as const,
+                ngModuleFileName: 'back-in-stock-shared.module.ts',
+                ngModuleName: 'BackInStockSharedModule',
+            },
+            {
+                type: 'lazy' as const,
+                route: 'back-in-stock',
+                ngModuleFileName: 'back-in-stock.module.ts',
+                ngModuleName: 'BackInStockModule',
+            },
+        ],
+    };
 }
 
 export const backInStockNotificationHandler = new EmailEventListener('back-in-stock')

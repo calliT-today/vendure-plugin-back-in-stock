@@ -1,12 +1,33 @@
 # Back-In-Stock Vendure Plugin
 
-`npm install @callit-today/vendure-plugin-back-in-stock`
-and add the plugin to `vendure-config.ts`
+![Vendure version](https://img.shields.io/npm/dependency-version/@callit-today/vendure-plugin-back-in-stock/dev/@vendure/core)
+
+Keep your customers in the loop for when a sold-out product gets replenished and generate more revenue by adding potential future sales!
+
+## Getting started
+
+`yarn add @callit-today/vendure-plugin-back-in-stock`
+
+`yarn add -D @vendure/ui-devkit`
+
+Add the plugin and AdminUI extensions to the plugins object in `vendure-config.ts`
 
 ```ts
 export const config: VendureConfig = {
   // ... config options
-  plugins: [BackInStockPlugin.init({ enabled: true })],
+  AdminUiPlugin.init({
+    route: 'admin',
+    port: 3002,
+    adminUiConfig: {
+        apiHost: 'http://localhost',
+        apiPort: 3000,
+    },
+    app: compileUiExtensions({
+        outputPath: path.join(__dirname, '../admin-ui'),
+        extensions: [BackInStockPlugin.uiExtensions],
+    }),
+  }),
+  BackInStockPlugin.init({ enabled: true }),
 };
 ```
 
