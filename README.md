@@ -21,7 +21,7 @@ Implement frontend functionality. Refer to `back-in-stock` branch on [storefront
 
 ## Todo
 
-1. Customizable options for limiting number of emails sent, eg: to the amount of saleble stock, incase of limited stock availaibility for popular products. This will prevent customer disappointment if the product gets sold out again the same day of email notification sent.
+1. Customizable options for limiting number of emails sent, eg: to the amount of saleable stock, incase of limited stock availaibility for popular products. This will prevent customer disappointment if the product gets sold out again the same day of email notification being sent.
 2. Ability to send email notifications manually from the Admin UI, eg: when sending limited emails and the previous emails have not converted allowing other subscribers to be notified to buy the product.
 
 ## License
