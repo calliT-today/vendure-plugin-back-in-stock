@@ -13,7 +13,8 @@ import { BackInStock } from './entity/back-in-stock.entity';
 import { BackInStockService } from './service/back-in-stock.service';
 import { EmailEventListener } from '@vendure/email-plugin';
 import { BackInStockEvent } from './events/back-in-stock.event';
-import { BackInStockSubscriptionStatus, SortOrder } from '../generated/generated-shop-types';
+import { SortOrder } from '../generated/generated-shop-types';
+import { BackInStockSubscriptionStatus } from './types';
 import { UnionResolver } from './api/union.resolver';
 import { BackInStockAdminResolver } from './api/back-in-stock-admin.resolver';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
@@ -48,9 +49,10 @@ export class BackInStockPlugin {
         private backInStockService: BackInStockService,
         private productVariantService: ProductVariantService,
     ) {}
-    static options: BackInStockOptions;
-
-    static init(options: BackInStockOptions) {
+    static options: BackInStockOptions = {
+        enabled: true,
+    };
+    static init(options: BackInStockOptions): typeof BackInStockPlugin {
         this.options = options;
         return BackInStockPlugin;
     }

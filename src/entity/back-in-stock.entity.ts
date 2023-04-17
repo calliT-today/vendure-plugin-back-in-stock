@@ -15,17 +15,17 @@ export class BackInStock extends VendureEntity {
     }
 
     @Column('enum', { nullable: false, enum: BackInStockSubscriptionStatus })
-    status: BackInStockSubscriptionStatus;
+    status!: BackInStockSubscriptionStatus;
 
     @ManyToOne(type => ProductVariant, { nullable: false })
-    productVariant: ProductVariant;
+    productVariant!: ProductVariant;
 
     @ManyToOne(type => Channel, { nullable: false })
-    channel: Channel;
+    channel!: Channel;
 
     @ManyToOne(type => Customer, { nullable: true })
-    customer: Customer;
+    customer?: Customer;
 
     @Column('varchar', { nullable: false })
-    email: string;
+    email!: string;
 }

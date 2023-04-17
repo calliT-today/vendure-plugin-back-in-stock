@@ -14,7 +14,6 @@ import { SharedModule, addNavMenuSection } from '@vendure/admin-ui/core';
                         id: 'back-in-stock',
                         label: 'Back-In-Stock',
                         routerLink: ['/extensions/back-in-stock'],
-                        // Icon can be any of https://core.clarity.design/foundation/icons/shapes/
                         icon: 'assign-user',
                     },
                 ],

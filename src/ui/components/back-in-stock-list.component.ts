@@ -9,7 +9,6 @@ import {
 } from '../../../generated/generated-types';
 import { GET_BACKINSTOCK_SUBSCRIPTION_LIST } from './back-in-stock-list.graphql';
 
-// @ts-ignore
 @Component({
     selector: 'back-in-stock-list',
     templateUrl: './back-in-stock-list.component.html',
