@@ -10,25 +10,55 @@ Keep your customers in the loop for when a sold-out product gets replenished and
 
 `yarn add -D @vendure/ui-devkit`
 
-Add the plugin and AdminUI extensions to the plugins object in `vendure-config.ts`
+Add the plugin, email handler and AdminUI extensions to the plugins object in `vendure-config.ts`
 
 ```ts
 export const config: VendureConfig = {
-  // ... config options
-  AdminUiPlugin.init({
-    route: 'admin',
-    port: 3002,
-    adminUiConfig: {
-        apiHost: 'http://localhost',
-        apiPort: 3000,
-    },
-    app: compileUiExtensions({
-        outputPath: path.join(__dirname, '../admin-ui'),
-        extensions: [BackInStockPlugin.uiExtensions],
+  // .. config options
+  plugins: [
+    BackInStockPlugin.init({ enabled: true }),
+    EmailPlugin.init({
+      // .. email config
+      handlers: [...defaultEmailHandlers, backInStockNotificationHandler]
+    )},
+    AdminUiPlugin.init({
+      route: 'admin',
+      port: 3002,
+      adminUiConfig: {
+          apiHost: 'http://localhost',
+          apiPort: 3000,
+      },
+      app: compileUiExtensions({
+          outputPath: path.join(__dirname, '../admin-ui'),
+          extensions: [BackInStockPlugin.uiExtensions],
+      }),
     }),
-  }),
-  BackInStockPlugin.init({ enabled: true }),
+  ],
 };
+```
+
+Create a template file for the Back-In-Stock email in `static/email/templates/back-in-stock/body.hbs`
+
+```hbs
+{{> header title="{{productVariant.name}} - Back In Stock!" }}
+
+<mj-section background-color="#fafafa">
+    <mj-column>
+        <mj-text color="#525252">
+            {{ productVariant.name }} is now back in stock!
+        </mj-text>
+
+        <mj-button font-family="Helvetica"
+                   background-color="#f45e43"
+                   color="white"
+                   href="{{ url }}/{{ productVariant.product.slug }}">
+            View Product
+        </mj-button>
+
+    </mj-column>
+</mj-section>
+
+{{> footer }}
 ```
 
 ## How it works
