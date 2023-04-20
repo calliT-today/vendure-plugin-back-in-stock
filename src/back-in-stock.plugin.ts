@@ -3,7 +3,7 @@ import {
     EventBus,
     InternalServerError,
     PluginCommonModule,
-    ProductVariantEvent,
+    ProductVariant,
     ProductVariantService,
     RequestContextService,
     TransactionalConnection,
@@ -30,6 +30,66 @@ import { getApiType } from '@vendure/core/dist/api/common/get-api-type';
 export interface BackInStockOptions {
     enableEmail: boolean;
     limitEmailToStock: boolean;
+}
+
+/**
+ * @description
+ * Subscribes to {@link ProductVariant} inventory changes
+ * and FIFO updates BackInStock {@link BackInStock} to be notified
+ * to the amount of saleable stock with plugin init option
+ * limitEmailToStock = true or false to notify all subscribers
+ *
+ */
+@Injectable()
+@EventSubscriber()
+export class ProductVariantSubscriber implements EntitySubscriberInterface<ProductVariant> {
+    constructor(
+        private connection: TransactionalConnection,
+        private backInStockService: BackInStockService,
+        private productVariantService: ProductVariantService,
+        private requestContextService: RequestContextService,
+    ) {
+        this.connection.rawConnection.subscribers.push(this);
+    }
+    listenTo() {
+        return ProductVariant;
+    }
+
+    // set subscriptions to be notified only on replenishment event
+    async afterUpdate(event: UpdateEvent<ProductVariant>) {
+        if (
+            event.entity?.stockOnHand > event.databaseEntity?.stockOnHand &&
+            BackInStockPlugin.options.enableEmail
+        ) {
+            const ctx = await this.requestContextService.create({ apiType: getApiType() });
+            const productVariant = await this.productVariantService.findOne(ctx, event.entity?.id);
+            //! calculate saleable manually as this context is not aware of the current db transaction
+            const saleableStock =
+                event.entity?.stockOnHand -
+                productVariant!.stockAllocated -
+                productVariant!.outOfStockThreshold;
+
+            const backInStockSubscriptions = await this.backInStockService.findActiveForProductVariant(
+                ctx,
+                productVariant!.id,
+                {
+                    take: BackInStockPlugin.options.limitEmailToStock ? saleableStock : undefined,
+                    sort: {
+                        createdAt: SortOrder.ASC,
+                    },
+                },
+            );
+
+            if (saleableStock >= 1 && backInStockSubscriptions.totalItems >= 1) {
+                for (const subscription of backInStockSubscriptions.items) {
+                    this.backInStockService.update(ctx, {
+                        id: subscription.id,
+                        status: BackInStockSubscriptionStatus.Notified,
+                    });
+                }
+            }
+        }
+    }
 }
 
 /**
@@ -85,6 +145,7 @@ export class BackInStockSubscriber implements EntitySubscriberInterface<BackInSt
         },
         BackInStockService,
         BackInStockSubscriber,
+        ProductVariantSubscriber,
     ],
     shopApiExtensions: {
         schema: shopApiExtensions,
@@ -96,58 +157,14 @@ export class BackInStockSubscriber implements EntitySubscriberInterface<BackInSt
     },
 })
 export class BackInStockPlugin {
-    constructor(
-        private eventBus: EventBus,
-        private backInStockService: BackInStockService,
-        private productVariantService: ProductVariantService,
-    ) {}
     static options: BackInStockOptions = {
         enableEmail: true,
         limitEmailToStock: true,
     };
+
     static init(options: BackInStockOptions): typeof BackInStockPlugin {
         this.options = options;
         return BackInStockPlugin;
-    }
-
-    /**
-     * @description
-     * Subscribes to {@link ProductVariantEvent} inventory changes
-     * and FIFO updates BackInStock {@link BackInStock} to be notified
-     * to the amount of saleable stock with plugin init option
-     * limitEmailToStock = true or false to notify all subscribers
-     *
-     */
-    async onApplicationBootstrap() {
-        if (BackInStockPlugin.options.enableEmail) {
-            this.eventBus.ofType(ProductVariantEvent).subscribe(async event => {
-                for (const productVariant of event.entity) {
-                    const saleableStock = await this.productVariantService.getSaleableStockLevel(
-                        event.ctx,
-                        productVariant,
-                    );
-                    const backInStockSubscriptions =
-                        await this.backInStockService.findActiveForProductVariant(
-                            event.ctx,
-                            productVariant.id,
-                            {
-                                take: BackInStockPlugin.options.limitEmailToStock ? saleableStock : undefined,
-                                sort: {
-                                    createdAt: SortOrder.ASC,
-                                },
-                            },
-                        );
-                    if (saleableStock >= 1 && backInStockSubscriptions.totalItems >= 1) {
-                        for (const subscription of backInStockSubscriptions.items) {
-                            this.backInStockService.update(event.ctx, {
-                                id: subscription.id,
-                                status: BackInStockSubscriptionStatus.Notified,
-                            });
-                        }
-                    }
-                }
-            });
-        }
     }
 
     static uiExtensions: AdminUiExtension = {
