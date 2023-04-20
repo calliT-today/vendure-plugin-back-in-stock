@@ -1,22 +1,26 @@
-# Back-In-Stock Vendure Plugin
+## Back-In-Stock Vendure Plugin
 
 ![Vendure version](https://img.shields.io/npm/dependency-version/@callit-today/vendure-plugin-back-in-stock/dev/@vendure/core)
 
 Keep your customers in the loop for when a sold-out product gets replenished and generate more revenue by adding potential future sales!
 
-## Getting started
+
+
+# Getting started
 
 `yarn add @callit-today/vendure-plugin-back-in-stock`
 
 `yarn add -D @vendure/ui-devkit`
 
-Add the plugin, email handler and AdminUI extensions to the plugins object in `vendure-config.ts`
+\
+&nbsp;
+Add the plugin, email handler and AdminUI extensions to `plugins` in `vendure-config.ts`
 
 ```ts
 export const config: VendureConfig = {
   // .. config options
   plugins: [
-    BackInStockPlugin.init({ enabled: true }),
+    BackInStockPlugin.init({ enableEmail: true, limitEmailToStock: false }),
     EmailPlugin.init({
       // .. email config
       handlers: [...defaultEmailHandlers, backInStockNotificationHandler]
@@ -36,7 +40,8 @@ export const config: VendureConfig = {
   ],
 };
 ```
-
+\
+&nbsp;
 Create a template file for the Back-In-Stock email in `static/email/templates/back-in-stock/body.hbs`
 
 ```hbs
@@ -60,20 +65,35 @@ Create a template file for the Back-In-Stock email in `static/email/templates/ba
 
 {{> footer }}
 ```
+&nbsp;
 
 ## How it works
 
 For any product that is out of stock, customers can signup to be notified via email when the product is back in stock.
-When a product is replenished, the plugin gets all active subscriptions for it and sends email notifications.
+When a product is replenished, the plugin gets active subscriptions for it and sends email notifications.
+
+Disable email notifications by setting `enableEmail` to `false` in plugin `init`
+\
+For limiting notifications sent to the amount of saleable stock set `limitEmailToStock` to `true`
+
+&nbsp;
 
 ## Next steps
 
 Implement frontend functionality. Refer to `back-in-stock` branch on [storefront-qwik-starter](https://github.com/calliT-today/storefront-qwik-starter)
 
+&nbsp;
+
 ## Todo
 
-1. Customizable options for limiting number of emails sent, eg: to the amount of saleable stock, incase of limited stock availaibility for popular products. This will prevent customer disappointment if the product gets sold out again the same day of email notification being sent.
-2. Ability to send email notifications manually from the Admin UI, eg: when sending limited emails and the previous emails have not converted allowing other subscribers to be notified to buy the product.
+:white_check_mark: Customizable options for disabling email notifications and sending emails to the amount of saleable stock
+
+:white_check_mark: Ability to send email notifications manually from the Admin UI
+
+:soon: Dashboard with metrics and tracking conversions
+
+\
+&nbsp;
 
 ## License
 
