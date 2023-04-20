@@ -46,7 +46,7 @@
         </td>
         <td class="left align-middle">
             <a
-                title="{{ 'Stock on hand - ' + subscription.productVariant.stockOnHand }}"
+                title="{{ 'Stock on hand: ' + subscription.productVariant.stockOnHand }}"
                 [routerLink]="[
                     '/catalog',
                     'products',
@@ -63,6 +63,16 @@
         </td>
         <td class="left align-middle">
             {{ subscription.updatedAt | date : "yyyy-MM-dd '@' h:mma" }}
+        </td>
+        <td class="right align-middle">
+            <button
+                *ngIf="subscription.status === 'Created' && subscription.productVariant.stockOnHand > 0"
+                class="icon-button"
+                title="Send notification email"
+                (click)="notify(subscription.id)"
+            >
+                <clr-icon shape="envelope"></clr-icon>
+            </button>
         </td>
     </ng-template>
 </vdr-data-table>

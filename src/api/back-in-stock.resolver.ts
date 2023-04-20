@@ -1,8 +1,5 @@
-import { Inject } from '@nestjs/common';
 import { Args, Resolver, Query, Mutation } from '@nestjs/graphql';
 import { RequestContext, Ctx, PaginatedList, ID, ErrorResultUnion } from '@vendure/core';
-import { PLUGIN_INIT_OPTIONS } from '../constants';
-import { BackInStockOptions } from '../back-in-stock.plugin';
 import { BackInStock } from '../entity/back-in-stock.entity';
 import { BackInStockService } from '../service/back-in-stock.service';
 import {
@@ -15,11 +12,7 @@ import {
 
 @Resolver()
 export class BackInStockResolver {
-    constructor(
-        // @ts-ignore
-        @Inject(PLUGIN_INIT_OPTIONS) private options: BackInStockOptions,
-        private backInStockService: BackInStockService,
-    ) {}
+    constructor(private backInStockService: BackInStockService) {}
 
     @Query()
     async activeBackInStockSubscriptionsForProductVariant(

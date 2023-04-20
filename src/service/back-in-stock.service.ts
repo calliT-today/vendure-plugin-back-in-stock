@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PaginatedList } from '@vendure/common/lib/shared-types';
 import {
     ListQueryBuilder,
@@ -18,9 +18,6 @@ import {
 } from '@vendure/core';
 import { BackInStock } from '../entity/back-in-stock.entity';
 import { BackInStockSubscriptionStatus } from '../types';
-import { BackInStockOptions } from '../back-in-stock.plugin';
-import { PLUGIN_INIT_OPTIONS } from '../constants';
-
 import {
     CreateBackInStockInput,
     CreateBackInStockSubscriptionResult,
@@ -38,14 +35,18 @@ export class BackInStockService {
     private readonly relations = ['productVariant', 'channel', 'customer'];
 
     constructor(
-        // @ts-ignore
-        @Inject(PLUGIN_INIT_OPTIONS) private options: BackInStockOptions,
         private connection: TransactionalConnection,
         private listQueryBuilder: ListQueryBuilder,
         private channelService: ChannelService,
         private customerService: CustomerService,
         private productVariantService: ProductVariantService,
     ) {}
+
+    async findOne(ctx: RequestContext, id: ID): Promise<BackInStock | undefined> {
+        return this.connection.getRepository(ctx, BackInStock).findOne(id, {
+            relations: this.relations,
+        });
+    }
 
     async findAll(
         ctx: RequestContext,

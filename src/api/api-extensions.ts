@@ -63,6 +63,7 @@ export const shopApiExtensions = gql`
 
 export const adminApiExtensions = gql`
     extend type Query {
+        backInStockSubscription(id: ID!): BackInStock
         backInStockSubscriptions: BackInStockList!
     }
     ${commonApiExtensions}

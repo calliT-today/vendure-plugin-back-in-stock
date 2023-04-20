@@ -1,12 +1,10 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BaseListComponent, DataService } from '@vendure/admin-ui/core';
-import {
-    BackInStockSubscriptionStatus,
-    GetBackInStockSubscriptionList,
-    SortOrder,
-} from '../generated-types';
+import { BaseListComponent, DataService, NotificationService } from '@vendure/admin-ui/core';
+import { BackInStockSubscriptionStatus, GetBackInStockSubscriptionList, SortOrder } from '../generated-types';
 import { GET_BACKINSTOCK_SUBSCRIPTION_LIST } from './back-in-stock-list.graphql';
+import { gql } from 'graphql-tag';
+import { ID } from '@vendure/core';
 
 // @ts-ignore
 @Component({
@@ -22,7 +20,12 @@ export class BackInStockListComponent extends BaseListComponent<
 > {
     filteredStatus: BackInStockSubscriptionStatus | null = BackInStockSubscriptionStatus.Created;
 
-    constructor(private dataService: DataService, router: Router, route: ActivatedRoute) {
+    constructor(
+        private dataService: DataService,
+        protected notificationService: NotificationService,
+        router: Router,
+        route: ActivatedRoute,
+    ) {
         super(router, route);
         super.setQueryFn(
             (...args: any[]) => {
@@ -53,5 +56,26 @@ export class BackInStockListComponent extends BaseListComponent<
                 };
             },
         );
+    }
+
+    async notify(id: ID): Promise<void> {
+        try {
+            await this.dataService
+                .mutate(
+                    gql`
+                        mutation {
+                            updateBackInStockSubscription(input: {id: "${id}", status: Notified}) {
+                                id
+                                status
+                            }
+                        }
+                    `,
+                )
+                .toPromise();
+            this.notificationService.success('Notification email sent');
+            this.refresh();
+        } catch (e) {
+            this.notificationService.error('Error');
+        }
     }
 }
