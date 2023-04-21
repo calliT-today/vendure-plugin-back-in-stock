@@ -1,7 +1,7 @@
 {
   "name": "@callit-today/vendure-plugin-back-in-stock",
-  "version": "1.0.8",
-  "description": "Back-In-Stock Notification Plugin For Vendure",
+  "version": "1.1.0",
+  "description": "Back-In-Stock Email Notification Plugin For Vendure",
   "author": "CALLiT.today <plugins@callit.today>",
   "repository": "https://github.com/calliT-today/vendure-plugin-back-in-stock",
   "license": "MIT",
