@@ -1,13 +1,10 @@
 import {
     EntityHydrator,
-    EventBus,
-    InternalServerError,
     PluginCommonModule,
     ProductVariant,
     ProductVariantService,
     RequestContextService,
     TransactionalConnection,
-    TranslatorService,
     VendurePlugin,
 } from '@vendure/core';
 import { PLUGIN_INIT_OPTIONS } from './constants';
@@ -92,49 +89,6 @@ export class ProductVariantSubscriber implements EntitySubscriberInterface<Produ
     }
 }
 
-/**
- * @description
- * Subscribes to {@link BackInStock} subscription changes
- * and publishes the event that fires the email notification
- * when subscription is updated as notified.
- *
- */
-@Injectable()
-@EventSubscriber()
-export class BackInStockSubscriber implements EntitySubscriberInterface<BackInStock> {
-    constructor(
-        private connection: TransactionalConnection,
-        private eventBus: EventBus,
-        private backInStockService: BackInStockService,
-        private requestContextService: RequestContextService,
-        private translatorService: TranslatorService,
-    ) {
-        this.connection.rawConnection.subscribers.push(this);
-    }
-    listenTo() {
-        return BackInStock;
-    }
-
-    // cancel update as 'Notified' when email sending is disabled
-    async beforeUpdate(event: UpdateEvent<BackInStock>) {
-        if (event.entity?.status === 'Notified' && !BackInStockPlugin.options.enableEmail) {
-            throw new InternalServerError('Email notification disabled');
-        }
-    }
-
-    // create event for sending email notifications
-    async afterUpdate(event: UpdateEvent<BackInStock>) {
-        if (event.entity?.status === 'Notified' && BackInStockPlugin.options.enableEmail) {
-            const ctx = await this.requestContextService.create({ apiType: getApiType() });
-            const subscription = await this.backInStockService.findOne(ctx, event.entity?.id);
-            const translatedVariant = this.translatorService.translate(subscription!.productVariant, ctx);
-            this.eventBus.publish(
-                new BackInStockEvent(ctx, subscription!, translatedVariant, 'updated', subscription!.email),
-            );
-        }
-    }
-}
-
 @VendurePlugin({
     imports: [PluginCommonModule],
     entities: [BackInStock],
@@ -144,7 +98,6 @@ export class BackInStockSubscriber implements EntitySubscriberInterface<BackInSt
             useFactory: () => BackInStockPlugin.options,
         },
         BackInStockService,
-        BackInStockSubscriber,
         ProductVariantSubscriber,
     ],
     shopApiExtensions: {

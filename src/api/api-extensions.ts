@@ -45,7 +45,6 @@ export const commonApiExtensions = gql`
     }
 
     extend type Query {
-        activeBackInStockSubscriptionsForProductVariant(input: ProductVariantInput): BackInStockList!
         activeBackInStockSubscriptionForProductVariantWithCustomer(
             input: CreateBackInStockInput!
         ): BackInStock!
@@ -53,7 +52,6 @@ export const commonApiExtensions = gql`
 
     extend type Mutation {
         createBackInStockSubscription(input: CreateBackInStockInput!): CreateBackInStockSubscriptionResult!
-        updateBackInStockSubscription(input: UpdateBackInStockInput!): BackInStock!
     }
 `;
 
@@ -63,8 +61,12 @@ export const shopApiExtensions = gql`
 
 export const adminApiExtensions = gql`
     extend type Query {
+        activeBackInStockSubscriptionsForProductVariant(input: ProductVariantInput): BackInStockList!
         backInStockSubscription(id: ID!): BackInStock
         backInStockSubscriptions: BackInStockList!
+    }
+    extend type Mutation {
+        updateBackInStockSubscription(input: UpdateBackInStockInput!): BackInStock!
     }
     ${commonApiExtensions}
 `;

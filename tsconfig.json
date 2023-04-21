@@ -12,7 +12,8 @@
     "skipLibCheck": true,
     "types": ["node"],
     "declaration": true,
-    "outDir": "dist"
+    "outDir": "dist",
+    "strictPropertyInitialization": true,
   },
   "include": ["src/"],
   "exclude": ["src/ui/*"]

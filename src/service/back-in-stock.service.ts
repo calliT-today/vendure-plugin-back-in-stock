@@ -15,6 +15,9 @@ import {
     TransactionalConnection,
     patchEntity,
     ErrorResultUnion,
+    InternalServerError,
+    EventBus,
+    TranslatorService,
 } from '@vendure/core';
 import { BackInStock } from '../entity/back-in-stock.entity';
 import { BackInStockSubscriptionStatus } from '../types';
@@ -24,6 +27,8 @@ import {
     ErrorCode,
     UpdateBackInStockInput,
 } from '../../generated/generated-shop-types';
+import { BackInStockPlugin } from '../back-in-stock.plugin';
+import { BackInStockEvent } from '../events/back-in-stock.event';
 
 /**
  * @description
@@ -40,6 +45,8 @@ export class BackInStockService {
         private channelService: ChannelService,
         private customerService: CustomerService,
         private productVariantService: ProductVariantService,
+        private translatorService: TranslatorService,
+        private eventBus: EventBus,
     ) {}
 
     async findOne(ctx: RequestContext, id: ID): Promise<BackInStock | undefined> {
@@ -156,9 +163,24 @@ export class BackInStockService {
         }
     }
 
+    // publishes the event that fires off the email notification when subscription is updated as notified
     async update(ctx: RequestContext, input: UpdateBackInStockInput): Promise<BackInStock> {
-        const subscription = await this.connection.getEntityOrThrow(ctx, BackInStock, input.id);
+        const subscription = await this.findOne(ctx, input.id);
+        if (!subscription) {
+            throw new InternalServerError('Subscription not found');
+        }
+
         const updatedSubscription = patchEntity(subscription, input);
+        if (input.status === 'Notified') {
+            if (BackInStockPlugin.options.enableEmail) {
+                const translatedVariant = this.translatorService.translate(subscription.productVariant, ctx);
+                this.eventBus.publish(
+                    new BackInStockEvent(ctx, subscription, translatedVariant, 'updated', subscription.email),
+                );
+            } else {
+                throw new InternalServerError('Email notification disabled');
+            }
+        }
         return this.connection.getRepository(ctx, BackInStock).save(updatedSubscription);
     }
 }
