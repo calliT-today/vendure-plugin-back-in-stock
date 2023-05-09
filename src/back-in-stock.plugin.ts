@@ -27,6 +27,12 @@ import { getApiType } from '@vendure/core/dist/api/common/get-api-type';
 export interface BackInStockOptions {
     enableEmail: boolean;
     limitEmailToStock: boolean;
+    /**
+     * Allow subscribing to out of stock emails for calls without a session. Defaults to true.
+     * With allowSubscriptionWithoutSession=true anyone can subscribe to out of stock emails, 
+     * even when the caller doesn't have an active session
+     */
+    allowSubscriptionWithoutSession?: boolean;
 }
 
 /**
@@ -116,6 +122,9 @@ export class BackInStockPlugin {
     };
 
     static init(options: BackInStockOptions): typeof BackInStockPlugin {
+        if (options.allowSubscriptionWithoutSession === undefined) {
+            options.allowSubscriptionWithoutSession = true;
+        }
         this.options = options;
         return BackInStockPlugin;
     }
