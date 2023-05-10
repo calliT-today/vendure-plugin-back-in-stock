@@ -26,7 +26,7 @@ import {
     CreateBackInStockSubscriptionResult,
     ErrorCode,
     UpdateBackInStockInput,
-} from '../../generated/generated-shop-types';
+} from '../generated/graphql-shop-api-types';
 import { BackInStockPlugin } from '../back-in-stock.plugin';
 import { BackInStockEvent } from '../events/back-in-stock.event';
 
@@ -135,7 +135,7 @@ export class BackInStockService {
 
         if (!email && !customer) {
             return {
-                errorCode: ErrorCode.UNKNOWN_ERROR,
+                errorCode: ErrorCode.UnknownError,
                 message: 'Email is required!',
             };
         }
@@ -157,7 +157,7 @@ export class BackInStockService {
             return await this.connection.getRepository(ctx, BackInStock).save(backInStockSubscription);
         } else {
             return {
-                errorCode: ErrorCode.BACK_IN_STOCK_ALREADY_SUBSCRIBED_ERROR,
+                errorCode: ErrorCode.BackInStockAlreadySubscribedError,
                 message: 'Already subscribed!',
             };
         }

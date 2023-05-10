@@ -99,3 +99,12 @@ Implement frontend functionality. Refer to `back-in-stock` branch on [storefront
 ## License
 
 MIT
+
+## Development
+
+Run `yarn start` to start Vendure on http://localhost:3050/admin
+
+### Generate graphql types
+
+1. Start the dev-server with `yarn start`
+2. In another terminal window, run `yarn generate`

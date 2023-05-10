@@ -1,14 +1,15 @@
 import { Args, Resolver, Query, Mutation } from '@nestjs/graphql';
 import { Inject } from '@nestjs/common';
-import { RequestContext, Ctx, ErrorResultUnion, PLUGIN_INIT_OPTIONS, ForbiddenError } from '@vendure/core';
+import { RequestContext, Ctx, ErrorResultUnion, ForbiddenError } from '@vendure/core';
 import { BackInStock } from '../entity/back-in-stock.entity';
 import { BackInStockService } from '../service/back-in-stock.service';
 import {
     MutationCreateBackInStockSubscriptionArgs,
     QueryActiveBackInStockSubscriptionForProductVariantWithCustomerArgs,
     CreateBackInStockSubscriptionResult,
-} from '../../generated/generated-shop-types';
+} from '../generated/graphql-shop-api-types';
 import { BackInStockOptions } from '../back-in-stock.plugin';
+import { PLUGIN_INIT_OPTIONS } from '../constants';
 
 @Resolver()
 export class BackInStockResolver {

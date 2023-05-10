@@ -14,7 +14,6 @@ import { BackInStock } from './entity/back-in-stock.entity';
 import { BackInStockService } from './service/back-in-stock.service';
 import { EmailEventListener } from '@vendure/email-plugin';
 import { BackInStockEvent } from './events/back-in-stock.event';
-import { SortOrder } from '../generated/generated-shop-types';
 import { BackInStockSubscriptionStatus } from './types';
 import { UnionResolver } from './api/union.resolver';
 import { BackInStockAdminResolver } from './api/back-in-stock-admin.resolver';
@@ -23,6 +22,7 @@ import path from 'path';
 import { EntitySubscriberInterface, EventSubscriber, UpdateEvent } from 'typeorm';
 import { Injectable } from '@nestjs/common';
 import { getApiType } from '@vendure/core/dist/api/common/get-api-type';
+import { SortOrder } from './generated/graphql-shop-api-types';
 
 export interface BackInStockOptions {
     enableEmail: boolean;
@@ -78,7 +78,7 @@ export class ProductVariantSubscriber implements EntitySubscriberInterface<Produ
                 {
                     take: BackInStockPlugin.options.limitEmailToStock ? saleableStock : undefined,
                     sort: {
-                        createdAt: SortOrder.ASC,
+                        createdAt: SortOrder.Asc,
                     },
                 },
             );

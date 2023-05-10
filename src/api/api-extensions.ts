@@ -1,5 +1,17 @@
 import { gql } from 'graphql-tag';
 
+// // These scalars act as mocks to support static Graphql type generation
+// const scalars = gql`
+//     scalar Node
+//     scalar DateTime
+//     scalar ProductVariant
+//     scalar Channel
+//     scalar Customer
+//     scalar ErrorResult
+//     scalar ErrorCode
+//     scalar PaginatedList
+// `;
+
 export const commonApiExtensions = gql`
     type BackInStock implements Node {
         id: ID!

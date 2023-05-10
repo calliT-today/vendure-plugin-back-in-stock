@@ -6,7 +6,7 @@ import {
     MutationUpdateBackInStockSubscriptionArgs,
     QueryActiveBackInStockSubscriptionsForProductVariantArgs,
     QueryBackInStockSubscriptionArgs,
-} from '../../generated/generated-admin-types';
+} from '../generated/graphql-admin-api-types';
 @Resolver()
 export class BackInStockAdminResolver {
     constructor(private backInStockService: BackInStockService) {}

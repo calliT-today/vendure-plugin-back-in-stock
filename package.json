@@ -16,16 +16,25 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/src/ && copyfiles -u 1 'generated/*' dist/src/generated"
+    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/src/ && copyfiles -u 1 'generated/*' dist/src/generated",
+    "generate": "graphql-codegen",
+    "start": "ts-node test/dev-server.ts"
   },
   "devDependencies": {
+    "@graphql-codegen/cli": "^2.4.0",
+    "@graphql-codegen/typescript": "^2.4.8",
+    "@graphql-codegen/typescript-operations": "^2.3.5",
     "@vendure/admin-ui-plugin": "1.9.3",
     "@vendure/asset-server-plugin": "1.9.3",
     "@vendure/core": "1.9.3",
     "@vendure/email-plugin": "^1.9.5",
+    "@vendure/testing": "1.9.3",
     "@vendure/ui-devkit": "1.9.3",
+    "copyfiles": "^2.4.1",
     "rimraf": "^4.1.2",
-    "typescript": "4.3.5",
-    "copyfiles": "^2.4.1"
+    "typescript": "4.3.5"
+  },
+  "dependencies": {
+    "ts-node": "^10.9.1"
   }
 }
