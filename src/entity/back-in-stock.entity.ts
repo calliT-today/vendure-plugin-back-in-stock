@@ -14,7 +14,7 @@ export class BackInStock extends VendureEntity {
         super(input);
     }
 
-    @Column('enum', { nullable: false, enum: BackInStockSubscriptionStatus })
+    @Column('varchar')
     status!: BackInStockSubscriptionStatus;
 
     @ManyToOne(type => ProductVariant, { nullable: false })

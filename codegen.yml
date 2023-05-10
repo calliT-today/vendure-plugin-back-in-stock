@@ -1,0 +1,23 @@
+
+generates:
+  ./src/generated/graphql-shop-api-types.ts:
+    schema: http://localhost:3050/shop-api
+    # documents: 'src/ui/queries.ts'
+    plugins:
+      - typescript
+      - typescript-operations
+    config:
+      avoidOptionals: false
+      scalars:
+        DateTime: Date
+        ID: string | number
+  ./src/generated/graphql-admin-api-types.ts:
+    schema: http://localhost:3050/admin-api
+    plugins:
+      - typescript
+      - typescript-operations
+    config:
+      avoidOptionals: false
+      scalars:
+        DateTime: Date
+        ID: string | number
