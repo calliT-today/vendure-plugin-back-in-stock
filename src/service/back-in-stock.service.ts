@@ -53,7 +53,6 @@ export class BackInStockService implements OnApplicationBootstrap {
         private productVariantService: ProductVariantService,
         private translatorService: TranslatorService,
         private eventBus: EventBus,
-        private stockLevelService: StockLevelService,
         @Inject(PLUGIN_INIT_OPTIONS) private options: BackInStockOptions
     ) { }
 
@@ -63,11 +62,7 @@ export class BackInStockService implements OnApplicationBootstrap {
         this.eventBus.ofType(StockMovementEvent).subscribe(async event => {
             // Check new stockLevel of each variant in the event
             Promise.all(event.stockMovements.map(async ({ productVariant }) => {
-                const stock = await this.stockLevelService.getAvailableStock(event.ctx, productVariant.id);
-                const saleableStock =
-                    stock.stockOnHand -
-                    stock!.stockAllocated -
-                    productVariant!.outOfStockThreshold;
+                const saleableStock = await this.productVariantService.getSaleableStockLevel(event.ctx, productVariant);
                 if (saleableStock < 1) {
                     return; // Still not in stock
                 }

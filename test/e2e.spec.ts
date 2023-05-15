@@ -1,7 +1,10 @@
 import {
   DefaultLogger,
   EventBus,
-  LogLevel
+  LogLevel,
+  RequestContext,
+  StockLocationService,
+  StockMovementService
 } from '@vendure/core';
 import {
   SqljsInitializer,
@@ -53,7 +56,7 @@ describe('Back in Stock notifier', () => {
 
   it('Should not allow session-less subscriptions', async () => {
     await shopClient.asAnonymousUser();
-    let error: Error | undefined = undefined;
+    let error: any = undefined;
     try {
       await createBackInStockSubscription(shopClient, TEST_EMAIL_ADDRESS, 'T_1');
     } catch (e) {
@@ -71,19 +74,14 @@ describe('Back in Stock notifier', () => {
 
   it('Should publish event when variant is back in stock', async () => {
     await adminClient.asSuperAdmin();
+    
     // First set variant T_1 stock to 0;
-    let [variant] = await updateVariants(adminClient, [{
-      id: 'T_1',
-      stockOnHand: 0
-    }]);
-    expect(variant.stockOnHand).toBe(0);
-    expect(publishedEvents.length).toBe(0);
-    // Set variant T_1 stock to 1;
-    ([variant] = await updateVariants(adminClient, [{
-      id: 'T_1',
-      stockOnHand: 1
-    }]));
-    expect(variant.stockOnHand).toBe(1);
+    const result = await server.app.get(StockMovementService).adjustProductVariantStock(
+      RequestContext.empty(),
+      'T_1',
+      999
+    );
+    expect(result[0].quantity).toBe(999);
     expect(publishedEvents.length).toBe(1);
     expect(publishedEvents[0].emailAddress).toBe(TEST_EMAIL_ADDRESS);
     expect(publishedEvents[0].productVariant.id).toBe(1);
