@@ -26,6 +26,11 @@ import { SortOrder } from './generated/graphql-shop-api-types';
 
 export interface BackInStockOptions {
     enableEmail: boolean;
+    /**
+     * Only sent amount of emails equal to the saleable stock. 
+     * E.g. Only sent an email to 5 subscribers when 
+     * the saleable stock has been updated to 5
+     */
     limitEmailToStock: boolean;
     /**
      * Allow subscribing to out of stock emails for calls without a session. Defaults to true.
