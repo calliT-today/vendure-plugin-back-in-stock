@@ -1,7 +1,6 @@
 import {
   DefaultLogger,
   EventBus,
-  ForbiddenError,
   LogLevel
 } from '@vendure/core';
 import {
@@ -11,10 +10,10 @@ import {
   testConfig,
 } from '@vendure/testing';
 import { BackInStockPlugin } from '../src';
-import { initialData } from './initial-data';
-import { createBackInStockSubscription, getActiveOrder, updateVariants } from './helpers';
-import { BackInStock } from '../src/generated/graphql-shop-api-types';
 import { BackInStockEvent } from '../src/events/back-in-stock.event';
+import { BackInStock } from '../src/generated/graphql-shop-api-types';
+import { createBackInStockSubscription, getActiveOrder, updateVariants } from './helpers';
+import { initialData } from './initial-data';
 
 jest.setTimeout(10000);
 
