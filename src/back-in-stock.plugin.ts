@@ -54,13 +54,14 @@ export class BackInStockPlugin {
     static options: BackInStockOptions = {
         enableEmail: true,
         limitEmailToStock: true,
+        allowSubscriptionWithoutSession: true,
     };
 
     static init(options: BackInStockOptions): typeof BackInStockPlugin {
-        if (options.allowSubscriptionWithoutSession === undefined) {
-            options.allowSubscriptionWithoutSession = true;
-        }
-        this.options = options;
+        this.options = {
+            ...this.options,
+            ...options
+        }; // Only override whats passed in, leave the other defaults
         return BackInStockPlugin;
     }
 
