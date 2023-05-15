@@ -36,11 +36,11 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
         AdminUiPlugin.init({
           port: 3002,
           route: 'admin',
-        //   app: compileUiExtensions({
-        //     outputPath: path.join(__dirname, '__admin-ui'),
-        //     extensions: [BackInStockPlugin.uiExtensions],
-        //     devMode: true,
-        //   }),
+          app: compileUiExtensions({
+            outputPath: path.join(__dirname, '__admin-ui'),
+            extensions: [BackInStockPlugin.uiExtensions],
+            devMode: true,
+          }),
         }),
       ],
     });

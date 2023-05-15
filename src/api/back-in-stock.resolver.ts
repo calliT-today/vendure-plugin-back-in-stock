@@ -7,7 +7,7 @@ import {
     MutationCreateBackInStockSubscriptionArgs,
     QueryActiveBackInStockSubscriptionForProductVariantWithCustomerArgs,
     CreateBackInStockSubscriptionResult,
-} from '../generated/graphql-shop-api-types';
+} from '../ui/generated/graphql-shop-api-types';
 import { BackInStockOptions } from '../back-in-stock.plugin';
 import { PLUGIN_INIT_OPTIONS } from '../constants';
 
@@ -22,7 +22,7 @@ export class BackInStockResolver {
     async activeBackInStockSubscriptionForProductVariantWithCustomer(
         @Ctx() ctx: RequestContext,
         @Args() args: QueryActiveBackInStockSubscriptionForProductVariantWithCustomerArgs,
-    ): Promise<BackInStock | undefined> {
+    ): Promise<BackInStock | null> {
         return this.backInStockService.findActiveForProductVariantWithCustomer(
             ctx,
             args.input.productVariantId,

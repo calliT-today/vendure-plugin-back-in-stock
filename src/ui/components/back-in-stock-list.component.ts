@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BaseListComponent, DataService, NotificationService } from '@vendure/admin-ui/core';
-import { BackInStockSubscriptionStatus, GetBackInStockSubscriptionList, SortOrder } from '../generated-types';
+import { BaseListComponent, DataService, NotificationService, ItemOf } from '@vendure/admin-ui/core';
+import { BackInStockSubscriptionStatus, GetBackInStockSubscriptionListQuery, GetBackInStockSubscriptionListQueryVariables, SortOrder } from '../generated/graphql-admin-api-types';
 import { GET_BACKINSTOCK_SUBSCRIPTION_LIST } from './back-in-stock-list.graphql';
 import { gql } from 'graphql-tag';
 import { ID } from '@vendure/core';
@@ -14,9 +14,9 @@ import { ID } from '@vendure/core';
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BackInStockListComponent extends BaseListComponent<
-    GetBackInStockSubscriptionList.Query,
-    GetBackInStockSubscriptionList.Items,
-    GetBackInStockSubscriptionList.Variables
+    GetBackInStockSubscriptionListQuery,
+    ItemOf<GetBackInStockSubscriptionListQuery, 'backInStockSubscriptions'>,
+    GetBackInStockSubscriptionListQueryVariables
 > {
     filteredStatus: BackInStockSubscriptionStatus | null = BackInStockSubscriptionStatus.Created;
 
@@ -29,7 +29,7 @@ export class BackInStockListComponent extends BaseListComponent<
         super(router, route);
         super.setQueryFn(
             (...args: any[]) => {
-                return this.dataService.query<GetBackInStockSubscriptionList.Query>(
+                return this.dataService.query<GetBackInStockSubscriptionListQuery>(
                     GET_BACKINSTOCK_SUBSCRIPTION_LIST,
                     args,
                 );
@@ -41,16 +41,16 @@ export class BackInStockListComponent extends BaseListComponent<
                         skip,
                         take,
                         sort: {
-                            createdAt: SortOrder.ASC,
+                            createdAt: SortOrder.Asc,
                         },
                         ...(this.filteredStatus != null
                             ? {
-                                  filter: {
-                                      status: {
-                                          eq: this.filteredStatus,
-                                      },
-                                  },
-                              }
+                                filter: {
+                                    status: {
+                                        eq: this.filteredStatus,
+                                    },
+                                },
+                            }
                             : {}),
                     },
                 };

@@ -11,7 +11,7 @@ import {
 } from '@vendure/testing';
 import { BackInStockPlugin } from '../src';
 import { BackInStockEvent } from '../src/events/back-in-stock.event';
-import { BackInStock } from '../src/generated/graphql-shop-api-types';
+import { BackInStock } from '../src/ui/generated/graphql-shop-api-types';
 import { createBackInStockSubscription, getActiveOrder, updateVariants } from './helpers';
 import { initialData } from './initial-data';
 
