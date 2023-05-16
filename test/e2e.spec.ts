@@ -19,8 +19,6 @@ import { BackInStock } from '../src/ui/generated/graphql-shop-api-types';
 import { createBackInStockSubscription, getActiveOrder } from './helpers';
 import { initialData } from './initial-data';
 
-// jest.setTimeout(10000);
-
 describe('Back in Stock notifier', () => {
 
   registerInitializer('sqljs', new SqljsInitializer('__data__'));
