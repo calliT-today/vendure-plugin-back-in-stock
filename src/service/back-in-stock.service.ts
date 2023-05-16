@@ -134,10 +134,10 @@ export class BackInStockService implements OnApplicationBootstrap {
             .build(BackInStock, options, {
                 relations: relations || this.relations,
                 ctx,
-                // where: {
-                //     productVariant: { id: productVariantId },
-                //     status: BackInStockSubscriptionStatus.Created,
-                // },
+                where: {
+                    productVariant: { id: productVariantId },
+                    status: BackInStockSubscriptionStatus.Created,
+                },
             })
             .getManyAndCount()
             .then(async ([items, totalItems]) => {
