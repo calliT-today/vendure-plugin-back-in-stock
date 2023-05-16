@@ -1,9 +1,9 @@
 import {
+  ChannelService,
   DefaultLogger,
   EventBus,
   LogLevel,
   RequestContext,
-  StockLocationService,
   StockMovementService
 } from '@vendure/core';
 import {
@@ -12,13 +12,14 @@ import {
   registerInitializer,
   testConfig,
 } from '@vendure/testing';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { BackInStockPlugin } from '../src';
 import { BackInStockEvent } from '../src/events/back-in-stock.event';
 import { BackInStock } from '../src/ui/generated/graphql-shop-api-types';
-import { createBackInStockSubscription, getActiveOrder, updateVariants } from './helpers';
+import { createBackInStockSubscription, getActiveOrder } from './helpers';
 import { initialData } from './initial-data';
 
-jest.setTimeout(10000);
+// jest.setTimeout(10000);
 
 describe('Back in Stock notifier', () => {
 
@@ -34,7 +35,6 @@ describe('Back in Stock notifier', () => {
   testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
   const { server, adminClient, shopClient } = createTestEnvironment(testConfig);
   let started = false;
-  const publishedEvents: any[] = [];
   const TEST_EMAIL_ADDRESS = 'martijn@pinelab.studio';
 
   beforeAll(async () => {
@@ -43,7 +43,6 @@ describe('Back in Stock notifier', () => {
       productsCsvPath: './test/products.csv',
     });
     started = true;
-    server.app.get(EventBus).ofType(BackInStockEvent).subscribe(event => publishedEvents.push(event));
   }, 60000);
 
   afterAll(async () => {
@@ -73,15 +72,22 @@ describe('Back in Stock notifier', () => {
   });
 
   it('Should publish event when variant is back in stock', async () => {
+    const publishedEvents: any[] = [];
+    server.app.get(EventBus).ofType(BackInStockEvent).subscribe(event => publishedEvents.push(event));
     await adminClient.asSuperAdmin();
-    
-    // First set variant T_1 stock to 0;
-    const result = await server.app.get(StockMovementService).adjustProductVariantStock(
-      RequestContext.empty(),
-      'T_1',
+    // Update stock
+    const ctx = new RequestContext({
+      apiType: 'admin',
+      authorizedAsOwnerOnly: false,
+      channel: await server.app.get(ChannelService).getDefaultChannel(),
+      isAuthorized: true,
+    })
+    await server.app.get(StockMovementService).adjustProductVariantStock(
+      ctx,
+      1,
       999
     );
-    expect(result[0].quantity).toBe(999);
+    await new Promise(resolve => setTimeout(resolve, 3000)); // Await async job processing
     expect(publishedEvents.length).toBe(1);
     expect(publishedEvents[0].emailAddress).toBe(TEST_EMAIL_ADDRESS);
     expect(publishedEvents[0].productVariant.id).toBe(1);

@@ -21,6 +21,7 @@ import {
     StockMovementEvent,
     StockLevelService,
     Logger,
+    EntityHydrator,
 } from '@vendure/core';
 import { BackInStock } from '../entity/back-in-stock.entity';
 import { BackInStockSubscriptionStatus } from '../types';
@@ -60,9 +61,16 @@ export class BackInStockService implements OnApplicationBootstrap {
     onApplicationBootstrap() {
         // Listen for stock movements and update subscriptions
         this.eventBus.ofType(StockMovementEvent).subscribe(async event => {
+            // Refetch variants, because variants in event does not have all properties fetched from DB
+            const variants = await this.productVariantService.findByIds(event.ctx, event.stockMovements.map(sm => sm.productVariant.id));
             // Check new stockLevel of each variant in the event
-            Promise.all(event.stockMovements.map(async ({ productVariant }) => {
+            Promise.all(variants.map(async (productVariant) => {
                 const saleableStock = await this.productVariantService.getSaleableStockLevel(event.ctx, productVariant);
+                if (isNaN(saleableStock)) {
+                    // This can happen when an event is fired during bootstrap, 
+                    // so Vendure can't yet resolve saleable stock for some reason
+                    return;
+                }
                 if (saleableStock < 1) {
                     return; // Still not in stock
                 }
@@ -70,7 +78,7 @@ export class BackInStockService implements OnApplicationBootstrap {
                     event.ctx,
                     productVariant!.id,
                     {
-                        take: this.options.limitEmailToStock ? saleableStock : 9999999,
+                        take: this.options.limitEmailToStock ? saleableStock : undefined,
                         sort: {
                             createdAt: SortOrder.Asc,
                         },
@@ -122,16 +130,14 @@ export class BackInStockService implements OnApplicationBootstrap {
         options?: ListQueryOptions<BackInStock>,
         relations?: RelationPaths<Channel> | RelationPaths<Customer>,
     ): Promise<PaginatedList<BackInStock>> {
-        const productVariant = await this.productVariantService.findOne(ctx, productVariantId);
-
         return this.listQueryBuilder
             .build(BackInStock, options, {
                 relations: relations || this.relations,
                 ctx,
-                where: {
-                    productVariant: { id: productVariantId },
-                    status: BackInStockSubscriptionStatus.Created,
-                },
+                // where: {
+                //     productVariant: { id: productVariantId },
+                //     status: BackInStockSubscriptionStatus.Created,
+                // },
             })
             .getManyAndCount()
             .then(async ([items, totalItems]) => {
@@ -182,6 +188,13 @@ export class BackInStockService implements OnApplicationBootstrap {
             };
         }
 
+        if (!productVariant) {
+            return {
+                errorCode: ErrorCode.UnknownError,
+                message: `No variant found with ID ${input.productVariantId}`,
+            };
+        }
+
         const existingSubscription = await this.findActiveForProductVariantWithCustomer(
             ctx,
             productVariantId,
@@ -211,7 +224,6 @@ export class BackInStockService implements OnApplicationBootstrap {
         if (!subscription) {
             throw new InternalServerError('Subscription not found');
         }
-
         const updatedSubscription = patchEntity(subscription, input);
         if (input.status === 'Notified') {
             if (this.options.enableEmail) {

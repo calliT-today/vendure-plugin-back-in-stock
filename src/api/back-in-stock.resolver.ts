@@ -35,7 +35,6 @@ export class BackInStockResolver {
         @Ctx() ctx: RequestContext,
         @Args() args: MutationCreateBackInStockSubscriptionArgs,
     ): Promise<ErrorResultUnion<CreateBackInStockSubscriptionResult, BackInStock>> {
-        console.log('902390230932099023', this.options.allowSubscriptionWithoutSession );
         if (!this.options.allowSubscriptionWithoutSession && ctx.session === undefined) {
             throw new ForbiddenError();
         }
