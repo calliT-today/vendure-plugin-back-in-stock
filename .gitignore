@@ -1,3 +1,5 @@
 __data__
 dist
 node_modules
+__admin-ui
+*.log

@@ -18,6 +18,10 @@ import {
     InternalServerError,
     EventBus,
     TranslatorService,
+    StockMovementEvent,
+    StockLevelService,
+    Logger,
+    EntityHydrator,
 } from '@vendure/core';
 import { BackInStock } from '../entity/back-in-stock.entity';
 import { BackInStockSubscriptionStatus } from '../types';
@@ -25,10 +29,13 @@ import {
     CreateBackInStockInput,
     CreateBackInStockSubscriptionResult,
     ErrorCode,
+    SortOrder,
     UpdateBackInStockInput,
-} from '../generated/graphql-shop-api-types';
-import { BackInStockPlugin } from '../back-in-stock.plugin';
+} from '../ui/generated/graphql-shop-api-types';
+import { BackInStockOptions } from '../back-in-stock.plugin';
 import { BackInStockEvent } from '../events/back-in-stock.event';
+import { OnApplicationBootstrap, Inject } from '@nestjs/common';
+import { PLUGIN_INIT_OPTIONS, loggerCtx } from '../constants';
 
 /**
  * @description
@@ -36,7 +43,7 @@ import { BackInStockEvent } from '../events/back-in-stock.event';
  *
  */
 @Injectable()
-export class BackInStockService {
+export class BackInStockService implements OnApplicationBootstrap {
     private readonly relations = ['productVariant', 'channel', 'customer'];
 
     constructor(
@@ -47,11 +54,58 @@ export class BackInStockService {
         private productVariantService: ProductVariantService,
         private translatorService: TranslatorService,
         private eventBus: EventBus,
-    ) {}
+        @Inject(PLUGIN_INIT_OPTIONS) private options: BackInStockOptions
+    ) { }
 
-    async findOne(ctx: RequestContext, id: ID): Promise<BackInStock | undefined> {
-        return this.connection.getRepository(ctx, BackInStock).findOne(id, {
-            relations: this.relations,
+
+    onApplicationBootstrap() {
+        // Listen for stock movements and update subscriptions
+        this.eventBus.ofType(StockMovementEvent).subscribe(async event => {
+            this.handleStockMovement(event).catch((e: unknown) => Logger.error(`Failed to handle StockMovementEvent ${e}`, loggerCtx));
+        });
+    }
+
+    async handleStockMovement(event: StockMovementEvent): Promise<void> {
+        // Refetch variants, because variants in event does not have all properties fetched from DB
+        const variants = await this.productVariantService.findByIds(event.ctx, event.stockMovements.map(sm => sm.productVariant.id));
+        // Check new stockLevel of each variant in the event
+        Promise.all(variants.map(async (productVariant) => {
+            const saleableStock = await this.productVariantService.getSaleableStockLevel(event.ctx, productVariant);
+            if (isNaN(saleableStock)) {
+                // This can happen when an event is fired during bootstrap, 
+                // so Vendure can't yet resolve saleable stock for some reason
+                throw Error(`Saleable stock returned NaN for variant ${productVariant.id}`);
+            }
+            if (saleableStock < 1) {
+                return; // Still not in stock
+            }
+            const backInStockSubscriptions = await this.findActiveForProductVariant(
+                event.ctx,
+                productVariant!.id,
+                {
+                    take: this.options.limitEmailToStock ? saleableStock : undefined,
+                    sort: {
+                        createdAt: SortOrder.Asc,
+                    },
+                },
+            );
+            if (backInStockSubscriptions.totalItems < 1) {
+                return; // No subscriptions to notify
+            }
+            await Promise.all(backInStockSubscriptions.items.map(async subscription =>
+                this.update(event.ctx, {
+                    id: subscription.id,
+                    status: BackInStockSubscriptionStatus.Notified,
+                })));
+        }));
+    }
+
+    async findOne(ctx: RequestContext, id: ID): Promise<BackInStock | null> {
+        return this.connection.getRepository(ctx, BackInStock).findOne({
+            where: {
+                id
+            },
+            relations: { productVariant: true, channel: true, customer: true },
         });
     }
 
@@ -80,14 +134,12 @@ export class BackInStockService {
         options?: ListQueryOptions<BackInStock>,
         relations?: RelationPaths<Channel> | RelationPaths<Customer>,
     ): Promise<PaginatedList<BackInStock>> {
-        const productVariant = await this.productVariantService.findOne(ctx, productVariantId);
-
         return this.listQueryBuilder
             .build(BackInStock, options, {
                 relations: relations || this.relations,
                 ctx,
                 where: {
-                    productVariant,
+                    productVariant: { id: productVariantId },
                     status: BackInStockSubscriptionStatus.Created,
                 },
             })
@@ -104,7 +156,7 @@ export class BackInStockService {
         ctx: RequestContext,
         productVariantId: ID,
         email: string,
-    ): Promise<BackInStock | undefined> {
+    ): Promise<BackInStock | null> {
         const { channelId } = ctx;
         const status = BackInStockSubscriptionStatus.Created;
         const queryBuilder = this.connection
@@ -140,6 +192,13 @@ export class BackInStockService {
             };
         }
 
+        if (!productVariant) {
+            return {
+                errorCode: ErrorCode.UnknownError,
+                message: `No variant found with ID ${input.productVariantId}`,
+            };
+        }
+
         const existingSubscription = await this.findActiveForProductVariantWithCustomer(
             ctx,
             productVariantId,
@@ -169,14 +228,14 @@ export class BackInStockService {
         if (!subscription) {
             throw new InternalServerError('Subscription not found');
         }
-
         const updatedSubscription = patchEntity(subscription, input);
         if (input.status === 'Notified') {
-            if (BackInStockPlugin.options.enableEmail) {
+            if (this.options.enableEmail) {
                 const translatedVariant = this.translatorService.translate(subscription.productVariant, ctx);
                 this.eventBus.publish(
                     new BackInStockEvent(ctx, subscription, translatedVariant, 'updated', subscription.email),
                 );
+                Logger.info(`Publish "BackInStockEvent" for variant ${translatedVariant.sku} to notify "${subscription.email}"`, loggerCtx);
             } else {
                 throw new InternalServerError('Email notification disabled');
             }

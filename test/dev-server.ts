@@ -1,9 +1,12 @@
 import { AdminUiPlugin } from '@vendure/admin-ui-plugin';
 import { AssetServerPlugin } from '@vendure/asset-server-plugin';
 import {
+  ChannelService,
   DefaultLogger,
   DefaultSearchPlugin,
   LogLevel,
+  RequestContext,
+  StockMovementService,
   mergeConfig,
 } from '@vendure/core';
 import {
@@ -27,7 +30,11 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
         shopApiPlayground: {},
       },
       plugins: [
-        BackInStockPlugin,
+        BackInStockPlugin.init({
+          enableEmail: true,
+          limitEmailToStock: true,
+          allowSubscriptionWithoutSession: true
+        }),
         AssetServerPlugin.init({
           assetUploadDir: path.join(__dirname, '../__data__/assets'),
           route: 'assets',
@@ -36,11 +43,11 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
         AdminUiPlugin.init({
           port: 3002,
           route: 'admin',
-        //   app: compileUiExtensions({
-        //     outputPath: path.join(__dirname, '__admin-ui'),
-        //     extensions: [BackInStockPlugin.uiExtensions],
-        //     devMode: true,
-        //   }),
+          // app: compileUiExtensions({
+          //   outputPath: path.join(__dirname, '__admin-ui'),
+          //   extensions: [BackInStockPlugin.uiExtensions],
+          //   devMode: true,
+          // }),
         }),
       ],
     });
@@ -49,4 +56,17 @@ import { compileUiExtensions } from '@vendure/ui-devkit/compiler';
       initialData,
       productsCsvPath: './test/products.csv',
     });
+    // Publish a StockMovementEvent to trigger the BackInStockEvent
+    const ctx = new RequestContext({
+      apiType: 'admin',
+      authorizedAsOwnerOnly: false,
+      channel: await server.app.get(ChannelService).getDefaultChannel(),
+      isAuthorized: true,
+    })
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await server.app.get(StockMovementService).adjustProductVariantStock(
+      ctx,
+      1,
+      999
+    );
 })();

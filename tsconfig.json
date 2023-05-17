@@ -10,7 +10,7 @@
     "strict": true,
     "sourceMap": false,
     "skipLibCheck": true,
-    "types": ["node", "jest"],
+    "types": ["node"],
     "declaration": true,
     "outDir": "dist",
     "strictPropertyInitialization": true,

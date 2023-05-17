@@ -1,28 +1,19 @@
 import {
     EntityHydrator,
     PluginCommonModule,
-    ProductVariant,
-    ProductVariantService,
-    RequestContextService,
-    TransactionalConnection,
-    VendurePlugin,
+    VendurePlugin
 } from '@vendure/core';
-import { PLUGIN_INIT_OPTIONS } from './constants';
-import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
-import { BackInStockResolver } from './api/back-in-stock.resolver';
-import { BackInStock } from './entity/back-in-stock.entity';
-import { BackInStockService } from './service/back-in-stock.service';
 import { EmailEventListener } from '@vendure/email-plugin';
-import { BackInStockEvent } from './events/back-in-stock.event';
-import { BackInStockSubscriptionStatus } from './types';
-import { UnionResolver } from './api/union.resolver';
-import { BackInStockAdminResolver } from './api/back-in-stock-admin.resolver';
 import { AdminUiExtension } from '@vendure/ui-devkit/compiler';
 import path from 'path';
-import { EntitySubscriberInterface, EventSubscriber, UpdateEvent } from 'typeorm';
-import { Injectable } from '@nestjs/common';
-import { getApiType } from '@vendure/core/dist/api/common/get-api-type';
-import { SortOrder } from './generated/graphql-shop-api-types';
+import { adminApiExtensions, shopApiExtensions } from './api/api-extensions';
+import { BackInStockAdminResolver } from './api/back-in-stock-admin.resolver';
+import { BackInStockResolver } from './api/back-in-stock.resolver';
+import { UnionResolver } from './api/union.resolver';
+import { PLUGIN_INIT_OPTIONS } from './constants';
+import { BackInStock } from './entity/back-in-stock.entity';
+import { BackInStockEvent } from './events/back-in-stock.event';
+import { BackInStockService } from './service/back-in-stock.service';
 
 export interface BackInStockOptions {
     enableEmail: boolean;
@@ -40,66 +31,6 @@ export interface BackInStockOptions {
     allowSubscriptionWithoutSession?: boolean;
 }
 
-/**
- * @description
- * Subscribes to {@link ProductVariant} inventory changes
- * and FIFO updates BackInStock {@link BackInStock} to be notified
- * to the amount of saleable stock with plugin init option
- * limitEmailToStock = true or false to notify all subscribers
- *
- */
-@Injectable()
-@EventSubscriber()
-export class ProductVariantSubscriber implements EntitySubscriberInterface<ProductVariant> {
-    constructor(
-        private connection: TransactionalConnection,
-        private backInStockService: BackInStockService,
-        private productVariantService: ProductVariantService,
-        private requestContextService: RequestContextService,
-    ) {
-        this.connection.rawConnection.subscribers.push(this);
-    }
-    listenTo() {
-        return ProductVariant;
-    }
-
-    // set subscriptions to be notified only on replenishment event
-    async afterUpdate(event: UpdateEvent<ProductVariant>) {
-        if (
-            event.entity?.stockOnHand > event.databaseEntity?.stockOnHand &&
-            BackInStockPlugin.options.enableEmail
-        ) {
-            const ctx = await this.requestContextService.create({ apiType: getApiType() });
-            const productVariant = await this.productVariantService.findOne(ctx, event.entity?.id);
-            //! calculate saleable manually as this context is not aware of the current db transaction
-            const saleableStock =
-                event.entity?.stockOnHand -
-                productVariant!.stockAllocated -
-                productVariant!.outOfStockThreshold;
-
-            const backInStockSubscriptions = await this.backInStockService.findActiveForProductVariant(
-                ctx,
-                productVariant!.id,
-                {
-                    take: BackInStockPlugin.options.limitEmailToStock ? saleableStock : undefined,
-                    sort: {
-                        createdAt: SortOrder.Asc,
-                    },
-                },
-            );
-
-            if (saleableStock >= 1 && backInStockSubscriptions.totalItems >= 1) {
-                for (const subscription of backInStockSubscriptions.items) {
-                    this.backInStockService.update(ctx, {
-                        id: subscription.id,
-                        status: BackInStockSubscriptionStatus.Notified,
-                    });
-                }
-            }
-        }
-    }
-}
-
 @VendurePlugin({
     imports: [PluginCommonModule],
     entities: [BackInStock],
@@ -109,7 +40,6 @@ export class ProductVariantSubscriber implements EntitySubscriberInterface<Produ
             useFactory: () => BackInStockPlugin.options,
         },
         BackInStockService,
-        ProductVariantSubscriber,
     ],
     shopApiExtensions: {
         schema: shopApiExtensions,
@@ -124,13 +54,14 @@ export class BackInStockPlugin {
     static options: BackInStockOptions = {
         enableEmail: true,
         limitEmailToStock: true,
+        allowSubscriptionWithoutSession: true,
     };
 
     static init(options: BackInStockOptions): typeof BackInStockPlugin {
-        if (options.allowSubscriptionWithoutSession === undefined) {
-            options.allowSubscriptionWithoutSession = true;
-        }
-        this.options = options;
+        this.options = {
+            ...this.options,
+            ...options
+        }; // Only override whats passed in, leave the other defaults
         return BackInStockPlugin;
     }
 

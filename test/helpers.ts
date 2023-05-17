@@ -2,9 +2,9 @@ import {
     SimpleGraphQLClient
 } from '@vendure/testing';
 import { gql } from 'graphql-tag';
-import { CreateBackInStockSubscriptionResult } from '../src/generated/graphql-shop-api-types';
+import { CreateBackInStockSubscriptionResult } from '../src/ui/generated/graphql-shop-api-types';
 import { ProductVariant } from '@vendure/core';
-import { UpdateProductVariantInput } from '../src/generated/graphql-admin-api-types';
+import { UpdateProductVariantInput } from '../src/ui/generated/graphql-admin-api-types';
 
 export async function createBackInStockSubscription(shopClient: SimpleGraphQLClient, email: string, variantId: string): Promise<CreateBackInStockSubscriptionResult> {
     const { createBackInStockSubscription } = await shopClient.query(gql`

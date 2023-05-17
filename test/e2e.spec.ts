@@ -1,7 +1,10 @@
 import {
+  ChannelService,
   DefaultLogger,
   EventBus,
-  LogLevel
+  LogLevel,
+  RequestContext,
+  StockMovementService
 } from '@vendure/core';
 import {
   SqljsInitializer,
@@ -9,13 +12,12 @@ import {
   registerInitializer,
   testConfig,
 } from '@vendure/testing';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { BackInStockPlugin } from '../src';
 import { BackInStockEvent } from '../src/events/back-in-stock.event';
-import { BackInStock } from '../src/generated/graphql-shop-api-types';
-import { createBackInStockSubscription, getActiveOrder, updateVariants } from './helpers';
+import { BackInStock } from '../src/ui/generated/graphql-shop-api-types';
+import { createBackInStockSubscription, getActiveOrder } from './helpers';
 import { initialData } from './initial-data';
-
-jest.setTimeout(10000);
 
 describe('Back in Stock notifier', () => {
 
@@ -31,7 +33,6 @@ describe('Back in Stock notifier', () => {
   testConfig.logger = new DefaultLogger({ level: LogLevel.Debug });
   const { server, adminClient, shopClient } = createTestEnvironment(testConfig);
   let started = false;
-  const publishedEvents: any[] = [];
   const TEST_EMAIL_ADDRESS = 'martijn@pinelab.studio';
 
   beforeAll(async () => {
@@ -40,7 +41,6 @@ describe('Back in Stock notifier', () => {
       productsCsvPath: './test/products.csv',
     });
     started = true;
-    server.app.get(EventBus).ofType(BackInStockEvent).subscribe(event => publishedEvents.push(event));
   }, 60000);
 
   afterAll(async () => {
@@ -53,7 +53,7 @@ describe('Back in Stock notifier', () => {
 
   it('Should not allow session-less subscriptions', async () => {
     await shopClient.asAnonymousUser();
-    let error: Error | undefined = undefined;
+    let error: any = undefined;
     try {
       await createBackInStockSubscription(shopClient, TEST_EMAIL_ADDRESS, 'T_1');
     } catch (e) {
@@ -70,20 +70,22 @@ describe('Back in Stock notifier', () => {
   });
 
   it('Should publish event when variant is back in stock', async () => {
+    const publishedEvents: any[] = [];
+    server.app.get(EventBus).ofType(BackInStockEvent).subscribe(event => publishedEvents.push(event));
     await adminClient.asSuperAdmin();
-    // First set variant T_1 stock to 0;
-    let [variant] = await updateVariants(adminClient, [{
-      id: 'T_1',
-      stockOnHand: 0
-    }]);
-    expect(variant.stockOnHand).toBe(0);
-    expect(publishedEvents.length).toBe(0);
-    // Set variant T_1 stock to 1;
-    ([variant] = await updateVariants(adminClient, [{
-      id: 'T_1',
-      stockOnHand: 1
-    }]));
-    expect(variant.stockOnHand).toBe(1);
+    // Update stock
+    const ctx = new RequestContext({
+      apiType: 'admin',
+      authorizedAsOwnerOnly: false,
+      channel: await server.app.get(ChannelService).getDefaultChannel(),
+      isAuthorized: true,
+    })
+    await server.app.get(StockMovementService).adjustProductVariantStock(
+      ctx,
+      1,
+      999
+    );
+    await new Promise(resolve => setTimeout(resolve, 300)); // Await async job processing
     expect(publishedEvents.length).toBe(1);
     expect(publishedEvents[0].emailAddress).toBe(TEST_EMAIL_ADDRESS);
     expect(publishedEvents[0].productVariant.id).toBe(1);
