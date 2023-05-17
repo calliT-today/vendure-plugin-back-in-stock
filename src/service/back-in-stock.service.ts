@@ -74,7 +74,7 @@ export class BackInStockService implements OnApplicationBootstrap {
             if (isNaN(saleableStock)) {
                 // This can happen when an event is fired during bootstrap, 
                 // so Vendure can't yet resolve saleable stock for some reason
-                return;
+                throw Error(`Saleable stock returned NaN for variant ${productVariant.id}`);
             }
             if (saleableStock < 1) {
                 return; // Still not in stock
