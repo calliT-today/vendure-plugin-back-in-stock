@@ -61,39 +61,43 @@ export class BackInStockService implements OnApplicationBootstrap {
     onApplicationBootstrap() {
         // Listen for stock movements and update subscriptions
         this.eventBus.ofType(StockMovementEvent).subscribe(async event => {
-            // Refetch variants, because variants in event does not have all properties fetched from DB
-            const variants = await this.productVariantService.findByIds(event.ctx, event.stockMovements.map(sm => sm.productVariant.id));
-            // Check new stockLevel of each variant in the event
-            Promise.all(variants.map(async (productVariant) => {
-                const saleableStock = await this.productVariantService.getSaleableStockLevel(event.ctx, productVariant);
-                if (isNaN(saleableStock)) {
-                    // This can happen when an event is fired during bootstrap, 
-                    // so Vendure can't yet resolve saleable stock for some reason
-                    return;
-                }
-                if (saleableStock < 1) {
-                    return; // Still not in stock
-                }
-                const backInStockSubscriptions = await this.findActiveForProductVariant(
-                    event.ctx,
-                    productVariant!.id,
-                    {
-                        take: this.options.limitEmailToStock ? saleableStock : undefined,
-                        sort: {
-                            createdAt: SortOrder.Asc,
-                        },
-                    },
-                );
-                if (backInStockSubscriptions.totalItems < 1) {
-                    return; // No subscriptions to notify
-                }
-                await Promise.all(backInStockSubscriptions.items.map(async subscription =>
-                    this.update(event.ctx, {
-                        id: subscription.id,
-                        status: BackInStockSubscriptionStatus.Notified,
-                    })));
-            }));
+            this.handleStockMovement(event).catch((e: unknown) => Logger.error(`Failed to handle StockMovementEvent ${e}`, loggerCtx));
         });
+    }
+
+    async handleStockMovement(event: StockMovementEvent): Promise<void> {
+        // Refetch variants, because variants in event does not have all properties fetched from DB
+        const variants = await this.productVariantService.findByIds(event.ctx, event.stockMovements.map(sm => sm.productVariant.id));
+        // Check new stockLevel of each variant in the event
+        Promise.all(variants.map(async (productVariant) => {
+            const saleableStock = await this.productVariantService.getSaleableStockLevel(event.ctx, productVariant);
+            if (isNaN(saleableStock)) {
+                // This can happen when an event is fired during bootstrap, 
+                // so Vendure can't yet resolve saleable stock for some reason
+                return;
+            }
+            if (saleableStock < 1) {
+                return; // Still not in stock
+            }
+            const backInStockSubscriptions = await this.findActiveForProductVariant(
+                event.ctx,
+                productVariant!.id,
+                {
+                    take: this.options.limitEmailToStock ? saleableStock : undefined,
+                    sort: {
+                        createdAt: SortOrder.Asc,
+                    },
+                },
+            );
+            if (backInStockSubscriptions.totalItems < 1) {
+                return; // No subscriptions to notify
+            }
+            await Promise.all(backInStockSubscriptions.items.map(async subscription =>
+                this.update(event.ctx, {
+                    id: subscription.id,
+                    status: BackInStockSubscriptionStatus.Notified,
+                })));
+        }));
     }
 
     async findOne(ctx: RequestContext, id: ID): Promise<BackInStock | null> {

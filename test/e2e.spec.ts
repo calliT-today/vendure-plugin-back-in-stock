@@ -12,7 +12,7 @@ import {
   registerInitializer,
   testConfig,
 } from '@vendure/testing';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { BackInStockPlugin } from '../src';
 import { BackInStockEvent } from '../src/events/back-in-stock.event';
 import { BackInStock } from '../src/ui/generated/graphql-shop-api-types';
@@ -85,7 +85,7 @@ describe('Back in Stock notifier', () => {
       1,
       999
     );
-    await new Promise(resolve => setTimeout(resolve, 3000)); // Await async job processing
+    await new Promise(resolve => setTimeout(resolve, 300)); // Await async job processing
     expect(publishedEvents.length).toBe(1);
     expect(publishedEvents[0].emailAddress).toBe(TEST_EMAIL_ADDRESS);
     expect(publishedEvents[0].productVariant.id).toBe(1);
