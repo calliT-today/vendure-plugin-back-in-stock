@@ -9,14 +9,14 @@
   "engines": {
     "node": ">=16.0.0"
   },
-  "main": "dist/src/index.js",
-  "types": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "README.md"
   ],
   "scripts": {
-    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/src/ && copyfiles -u 1 'generated/*' dist/src/generated",
+    "build": "rimraf dist && tsc && copyfiles -u 1 'src/ui/**/*' dist/",
     "generate": "graphql-codegen",
     "start": "ts-node test/dev-server.ts",
     "test": "vitest run"
