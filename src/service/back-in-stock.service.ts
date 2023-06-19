@@ -22,6 +22,7 @@ import {
     StockLevelService,
     Logger,
     EntityHydrator,
+    ConfigService,
 } from '@vendure/core';
 import { BackInStock } from '../entity/back-in-stock.entity';
 import { BackInStockSubscriptionStatus } from '../types';
@@ -54,6 +55,7 @@ export class BackInStockService implements OnApplicationBootstrap {
         private productVariantService: ProductVariantService,
         private translatorService: TranslatorService,
         private eventBus: EventBus,
+        private configService: ConfigService,
         @Inject(PLUGIN_INIT_OPTIONS) private options: BackInStockOptions
     ) { }
 
@@ -69,7 +71,7 @@ export class BackInStockService implements OnApplicationBootstrap {
         // Refetch variants, because variants in event does not have all properties fetched from DB
         const variants = await this.productVariantService.findByIds(event.ctx, event.stockMovements.map(sm => sm.productVariant.id));
         // Check new stockLevel of each variant in the event
-        Promise.all(variants.map(async (productVariant) => {
+        await Promise.all(variants.map(async (productVariant) => {
             const saleableStock = await this.productVariantService.getSaleableStockLevel(event.ctx, productVariant);
             if (isNaN(saleableStock)) {
                 // This can happen when an event is fired during bootstrap, 
@@ -78,6 +80,10 @@ export class BackInStockService implements OnApplicationBootstrap {
             }
             if (saleableStock < 1) {
                 return; // Still not in stock
+            }
+            let takeLimit = this.options.limitEmailToStock ? saleableStock : undefined;
+            if (takeLimit && takeLimit > this.configService.apiOptions.adminListQueryLimit) {
+                takeLimit = this.configService.apiOptions.adminListQueryLimit;
             }
             const backInStockSubscriptions = await this.findActiveForProductVariant(
                 event.ctx,
